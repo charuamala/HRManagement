@@ -93,16 +93,19 @@ export function Field({ label, error, hint, children, htmlFor }: { label: string
   );
 }
 
-const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none disabled:bg-slate-50";
+const inputCls = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none disabled:bg-slate-50";
+
+/** Full width by default; a width class passed by the caller (w-48, sm:w-56…) replaces it instead of fighting it. */
+const widthCls = (className?: string) => (/(^|\s)([a-z]+:)?w-/.test(className ?? "") ? null : "w-full");
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
   const { invalid, className, ...rest } = props;
-  return <input {...rest} aria-invalid={invalid || undefined} className={clsx(inputCls, invalid && "border-red-400", className)} />;
+  return <input {...rest} aria-invalid={invalid || undefined} className={clsx(inputCls, widthCls(className), invalid && "border-red-400", className)} />;
 }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
   const { invalid, className, ...rest } = props;
-  return <select {...rest} aria-invalid={invalid || undefined} className={clsx(inputCls, invalid && "border-red-400", className)} />;
+  return <select {...rest} aria-invalid={invalid || undefined} className={clsx(inputCls, widthCls(className), invalid && "border-red-400", className)} />;
 }
 
 export function Switch({ checked, onChange, disabled, label }: { checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; label: string }) {

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import clsx from "clsx";
 
 export const PAGE_SIZES = [10, 25, 50, 100];
 
@@ -39,7 +38,9 @@ function pageList(page: number, pages: number): (number | "…")[] {
   return out;
 }
 
-const btn = "inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40";
+const btnBase = "inline-flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40";
+const btn = `${btnBase} border-slate-300 bg-white text-slate-700 hover:bg-slate-50`;
+const btnActive = `${btnBase} border-brand-600 bg-brand-600 text-white hover:bg-brand-700`;
 
 /** "Showing 1–25 of 34 · Rows per page [25] · « ‹ 1 2 › »" */
 export function Pagination({
@@ -98,7 +99,7 @@ export function Pagination({
               …
             </span>
           ) : (
-            <button key={p} className={clsx(btn, p === page && "border-brand-600 bg-brand-600 text-white hover:bg-brand-700")} onClick={() => onPage(p)} aria-current={p === page ? "page" : undefined} aria-label={`Page ${p}`}>
+            <button key={p} className={p === page ? btnActive : btn} onClick={() => onPage(p)} aria-current={p === page ? "page" : undefined} aria-label={`Page ${p}`}>
               {p}
             </button>
           ),

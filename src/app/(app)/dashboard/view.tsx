@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { FileSpreadsheet } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { qs, useApi } from "@/lib/api";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { formatDisplayDate, formatMinutes } from "@/lib/time";
 import type { Summary } from "@/lib/kpi";
-import { Alert, Card, Empty, Field, Input, PageHeader, Select, Spinner, StatCard, StatusBadge } from "@/components/ui";
+import { Alert, Button, Card, Empty, Field, Input, PageHeader, Select, Spinner, StatCard, StatusBadge } from "@/components/ui";
+import { MonthlyReportPanel } from "@/components/monthly-report-panel";
 
 interface Row {
   employeeId: string;
@@ -55,6 +57,7 @@ export function DashboardView() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [departmentIds, setDept] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const options = useApi<{ departments: { id: string; name: string }[] }>("/api/meta/options");
   const url = `/api/dashboard${qs(preset === "custom" ? { preset, from, to, departmentIds } : { preset, departmentIds })}`;
   const { data, error, loading } = useApi<Dashboard>(preset === "custom" && (!from || !to) ? null : url);
@@ -98,9 +101,17 @@ export function DashboardView() {
                 ))}
               </Select>
             </Field>
+            <Button variant="secondary" onClick={() => setReportOpen((o) => !o)} aria-expanded={reportOpen} aria-controls="monthly-report" disabled={!data}>
+              <FileSpreadsheet className="h-4 w-4 text-green-700" /> Download Excel
+            </Button>
           </div>
         }
       />
+      {reportOpen && data && (
+        <div id="monthly-report">
+          <MonthlyReportPanel today={data.range.today} departmentId={departmentIds} />
+        </div>
+      )}
       {error && <Alert>{error.message}</Alert>}
       {loading && !data && <Spinner />}
       {data && s && (

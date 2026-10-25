@@ -42,7 +42,8 @@ export async function scopedEmployees(
       inSet(f.employeeIds, e.id) &&
       inSet(f.officeLocationIds, e.officeLocationId) &&
       inSet(f.shiftIds, e.shiftId) &&
-      inSet(f.employmentStatuses, e.employmentStatus),
+      inSet(f.employmentStatuses, e.employmentStatus) &&
+      inSet(f.employmentTypes, e.employmentType),
   );
   if (f.search) {
     const q = f.search.toLowerCase();

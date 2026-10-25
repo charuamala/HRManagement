@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, RotateCcw, Trash2, UserX } from "lucide-react";
+import { Eye, Pencil, Plus, RotateCcw, Search, Trash2, UserX } from "lucide-react";
 import { Pagination, usePageSize } from "@/components/pagination";
 import { qs, useApi } from "@/lib/api";
 import { EMPLOYMENT_STATUS_LABELS } from "@/lib/constants";
@@ -76,10 +76,10 @@ export function EmployeesView({ today, perms }: { today: string; perms: { create
           <Alert tone="success">{notice}</Alert>
         </div>
       )}
-      <Card
-        title="Employees"
-        actions={
-          <div className="flex flex-wrap justify-end gap-2">
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
+          <div className="relative min-w-[14rem] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
             <Input
               placeholder="Search name, Emp ID, UAN"
               value={search}
@@ -87,28 +87,57 @@ export function EmployeesView({ today, perms }: { today: string; perms: { create
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-56 py-1.5"
+              className="w-full pl-9"
               aria-label="Search employees"
             />
-            <Select value={departmentIds} onChange={(e) => setDept(e.target.value)} className="w-44 py-1.5" aria-label="Department">
-              <option value="">All departments</option>
-              {options.data?.departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </Select>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-40 py-1.5" aria-label="Employment status">
-              <option value="">All statuses</option>
-              {Object.entries(EMPLOYMENT_STATUS_LABELS).map(([k, l]) => (
-                <option key={k} value={k}>
-                  {l}
-                </option>
-              ))}
-            </Select>
           </div>
-        }
-      >
+          <Select
+            value={departmentIds}
+            onChange={(e) => {
+              setDept(e.target.value);
+              setPage(1);
+            }}
+            className="w-full sm:w-48"
+            aria-label="Department"
+          >
+            <option value="">All departments</option>
+            {options.data?.departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+            className="w-full sm:w-44"
+            aria-label="Employment status"
+          >
+            <option value="">All statuses</option>
+            {Object.entries(EMPLOYMENT_STATUS_LABELS).map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </Select>
+          {(search || departmentIds || status) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setDept("");
+                setStatus("");
+                setPage(1);
+              }}
+              className="px-2 text-sm font-medium text-slate-500 hover:text-slate-800"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         {error && <Alert>{error.message}</Alert>}
         {loading && !data ? (
           <Spinner />

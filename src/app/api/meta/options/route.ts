@@ -18,6 +18,6 @@ export const GET = route({}, async (_req, { auth }) => {
     locations,
     shifts,
     statuses,
-    employees: employees.map((e) => ({ id: e.id, employeeCode: e.employeeCode, fullName: e.fullName, departmentId: e.departmentId })),
+    employees: employees.map((e) => ({ id: e.id, employeeCode: e.employeeCode, fullName: e.fullName, departmentId: e.departmentId, supervisorEmployeeId: e.supervisorEmployeeId })),
   };
 });

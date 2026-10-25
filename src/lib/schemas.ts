@@ -317,6 +317,7 @@ export const reportFilterSchema = z.object({
   shiftIds: idList,
   statuses: z.array(z.string().max(30)).max(20).optional(),
   employmentStatuses: z.array(z.enum(["active", "probation", "notice", "inactive"])).optional(),
+  employmentTypes: z.array(z.enum(["full_time", "part_time", "contract", "intern"])).optional(),
   search: z.string().trim().max(100).optional(),
 });
 
@@ -330,6 +331,7 @@ export const FILTER_ARRAY_KEYS = [
   "shiftIds",
   "statuses",
   "employmentStatuses",
+  "employmentTypes",
 ];
 
 export const paginationSchema = z.object({

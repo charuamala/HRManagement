@@ -18,6 +18,29 @@ import type { Database } from "./index";
 
 type AnyDoc = { id: string } & Record<string, unknown>;
 
+const clone = <T>(v: T): T => structuredClone(v);
+
+/** Committed changes of one collection — consumed by the MongoDB mirror. */
+export interface ChangeSet {
+  collection: CollectionName;
+  upserts: AnyDoc[];
+  deletes: string[];
+}
+
+/** Docs are replaced (never mutated in place) on write, so identity is a fast first check. */
+function diffMaps(collection: CollectionName, before: Map<string, AnyDoc>, after: Map<string, AnyDoc>): ChangeSet | null {
+  const upserts: AnyDoc[] = [];
+  const deletes: string[] = [];
+  for (const [id, doc] of after) {
+    const prev = before.get(id);
+    if (prev === doc) continue;
+    if (prev && JSON.stringify(prev) === JSON.stringify(doc)) continue;
+    upserts.push(clone(doc));
+  }
+  for (const id of before.keys()) if (!after.has(id)) deletes.push(id);
+  return upserts.length || deletes.length ? { collection, upserts, deletes } : null;
+}
+
 interface TableState {
   docs: Map<string, AnyDoc>;
   mtimeMs: number;
@@ -40,16 +63,33 @@ class Mutex {
   }
 }
 
-const clone = <T>(v: T): T => structuredClone(v);
-
 export class JsonDatabase implements Database {
   readonly driver = "json" as const;
   private tables = new Map<CollectionName, TableState>();
   private mutex = new Mutex();
   private tx = new AsyncLocalStorage<TxState>();
 
+  /** Called after changes are safely on disk (each write, or once per committed transaction). */
+  onChange: ((changes: ChangeSet[]) => void) | null = null;
+
   constructor(private dir: string) {
     fs.mkdirSync(dir, { recursive: true });
+  }
+
+  private emit(changes: (ChangeSet | null)[]) {
+    const real = changes.filter((c): c is ChangeSet => !!c);
+    if (real.length && this.onChange) {
+      try {
+        this.onChange(real);
+      } catch (e) {
+        console.error("[json-db] change listener failed", e);
+      }
+    }
+  }
+
+  /** Synchronous snapshot of every collection (used by the mirror's full sync). */
+  snapshot(names: CollectionName[]): Map<CollectionName, AnyDoc[]> {
+    return new Map(names.map((n) => [n, [...this.table(n).docs.values()].map(clone)]));
   }
 
   private file(name: CollectionName) {
@@ -75,6 +115,8 @@ export class JsonDatabase implements Database {
     }
     const state = { docs, mtimeMs };
     this.tables.set(name, state);
+    // File rewritten by another process (seed/import script): forward the difference too.
+    if (cached) this.emit([diffMaps(name, cached.docs, docs)]);
     return state;
   }
 
@@ -103,6 +145,7 @@ export class JsonDatabase implements Database {
       try {
         const r = fn(state.docs);
         this.persist(name);
+        this.emit([diffMaps(name, before, state.docs)]);
         return r;
       } catch (e) {
         state.docs = before;
@@ -118,6 +161,7 @@ export class JsonDatabase implements Database {
       try {
         const result = await this.tx.run(state, fn);
         for (const name of state.dirty) this.persist(name);
+        this.emit([...state.dirty].map((name) => diffMaps(name, state.snapshots.get(name)!, this.tables.get(name)!.docs)));
         return result;
       } catch (e) {
         for (const [name, snap] of state.snapshots) {

@@ -12,10 +12,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
-    "migrate:mongo": "tsx scripts/migrate-to-mongo.ts",
+    "migrate:mongo": "tsx scripts/mongo-mirror.ts sync",
     "check": "npm run typecheck && npm run lint && npm run test",
     "import:register": "tsx scripts/import-register.ts",
-    "setup": "tsx scripts/setup.ts"
+    "setup": "tsx scripts/setup.ts",
+    "mirror": "tsx scripts/mongo-mirror.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "5.2.2",

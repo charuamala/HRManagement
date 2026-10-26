@@ -10,7 +10,7 @@ export interface Database {
   close(): Promise<void>;
 }
 
-type Holder = { db?: Database; pending?: Promise<Database> };
+type Holder = { db?: Database; pending?: Promise<Database>; mirror?: import("./mongo-mirror").MongoMirror | null };
 const g = globalThis as unknown as { __hrDb?: Holder };
 const holder: Holder = (g.__hrDb ??= {});
 
@@ -23,7 +23,36 @@ async function createDefault(): Promise<Database> {
     return MongoDatabase.connect(uri, process.env.MONGODB_DB ?? "hr_attendance");
   }
   const { JsonDatabase } = await import("./json-driver");
-  return new JsonDatabase(path.resolve(process.env.DATA_DIR ?? "./data"));
+  const dir = path.resolve(process.env.DATA_DIR ?? "./data");
+  const db = new JsonDatabase(dir);
+  holder.mirror = await createMirror(db, dir);
+  return db;
+}
+
+/**
+ * Optional cloud copy: with MONGO_MIRROR=true, every committed JSON change is also
+ * written to MongoDB (MONGODB_URI / MONGODB_DB). JSON remains the source of truth.
+ */
+async function createMirror(db: import("./json-driver").JsonDatabase, dir: string) {
+  if (process.env.MONGO_MIRROR !== "true") return null;
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.warn("[mirror] MONGO_MIRROR=true but MONGODB_URI is not set — mirror disabled");
+    return null;
+  }
+  const { MongoMirror } = await import("./mongo-mirror");
+  const { COLLECTIONS } = await import("./schema");
+  const names = Object.keys(COLLECTIONS) as CollectionName[];
+  const mirror = new MongoMirror(uri, process.env.MONGODB_DB ?? "hr_attendance", dir, () => db.snapshot(names));
+  db.onChange = (changes) => mirror.enqueue(changes);
+  if (process.env.MONGO_MIRROR_STARTUP_SYNC !== "false") mirror.requestFullSync();
+  return mirror;
+}
+
+/** The active MongoDB mirror, if enabled (null otherwise). */
+export async function getMirror() {
+  await getDb();
+  return holder.mirror ?? null;
 }
 
 export async function getDb(): Promise<Database> {
@@ -36,6 +65,7 @@ export async function getDb(): Promise<Database> {
 export function setDb(db: Database | undefined) {
   holder.db = db;
   holder.pending = undefined;
+  holder.mirror = null;
 }
 
 /** Shorthand: typed collection accessor. */

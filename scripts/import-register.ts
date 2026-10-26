@@ -8,6 +8,8 @@
 import fs from "fs";
 import path from "path";
 for (const f of [".env.local", ".env"]) if (fs.existsSync(f)) process.loadEnvFile(f);
+// Scripts write the JSON files only; the running server (or `npm run mirror -- sync`) copies changes to MongoDB.
+process.env.MONGO_MIRROR = "false";
 
 import { col } from "@/server/db";
 import { ensureBaseData } from "@/server/bootstrap";

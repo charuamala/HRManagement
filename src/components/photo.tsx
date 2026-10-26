@@ -3,10 +3,11 @@ import { useRef, useState } from "react";
 import clsx from "clsx";
 import { Camera, Trash2 } from "lucide-react";
 import { ApiError } from "@/lib/api";
+import { withBase } from "@/lib/base-path";
 import { Alert, Button } from "@/components/ui";
 
 export function photoUrl(employeeId: string, photoId: string | null | undefined) {
-  return photoId ? `/api/employees/${employeeId}/photo?v=${photoId}` : null;
+  return photoId ? withBase(`/api/employees/${employeeId}/photo?v=${photoId}`) : null;
 }
 
 function initials(name: string) {
@@ -56,7 +57,7 @@ export async function resizeImage(file: File, max = 512, quality = 0.85): Promis
 export async function uploadPhoto(employeeId: string, blob: Blob): Promise<string> {
   const fd = new FormData();
   fd.append("file", blob, "photo.jpg");
-  const res = await fetch(`/api/employees/${employeeId}/photo`, { method: "POST", body: fd, credentials: "same-origin" });
+  const res = await fetch(withBase(`/api/employees/${employeeId}/photo`), { method: "POST", body: fd, credentials: "same-origin" });
   const json = await res.json().catch(() => null);
   if (!json?.ok) throw new ApiError(res.status, json?.error?.code ?? "ERROR", json?.error?.message ?? "Upload failed", null);
   return json.data.photoId as string;
@@ -87,7 +88,7 @@ export function PhotoManager({ employeeId, photoId, name, canChange, onChange }:
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/employees/${employeeId}/photo`, { method: "DELETE", credentials: "same-origin" });
+      const res = await fetch(withBase(`/api/employees/${employeeId}/photo`), { method: "DELETE", credentials: "same-origin" });
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.error?.message ?? "Could not remove photo");
       onChange();
     } catch (e) {

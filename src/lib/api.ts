@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { withBase } from "./base-path";
 
 export class ApiError extends Error {
   constructor(
@@ -13,7 +14,7 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(method: string, url: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(withBase(url), {
     method,
     headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -25,7 +26,7 @@ export async function api<T>(method: string, url: string, body?: unknown): Promi
 async function unwrap<T>(res: Response, url: string): Promise<T> {
   const json = await res.json().catch(() => null);
   if (res.status === 401 && typeof window !== "undefined" && !url.startsWith("/api/auth/login")) {
-    window.location.href = "/login";
+    window.location.href = withBase("/login");
   }
   if (!json?.ok) throw new ApiError(res.status, json?.error?.code ?? "ERROR", json?.error?.message ?? `Request failed (${res.status})`, json?.error?.details ?? null);
   return json.data as T;
@@ -33,12 +34,12 @@ async function unwrap<T>(res: Response, url: string): Promise<T> {
 
 /** Multipart POST (file uploads); same envelope as `api`. */
 export async function upload<T>(url: string, form: FormData): Promise<T> {
-  return unwrap<T>(await fetch(url, { method: "POST", body: form, credentials: "same-origin" }), url);
+  return unwrap<T>(await fetch(withBase(url), { method: "POST", body: form, credentials: "same-origin" }), url);
 }
 
 /** Fetches a file endpoint and saves it; API errors surface as ApiError instead of a JSON page. */
 export async function download(url: string): Promise<void> {
-  const res = await fetch(url, { credentials: "same-origin" });
+  const res = await fetch(withBase(url), { credentials: "same-origin" });
   if (!res.ok) await unwrap(res, url);
   const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "download";
   const href = URL.createObjectURL(await res.blob());

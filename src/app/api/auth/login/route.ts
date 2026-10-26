@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { body, clientIp, errorResponse } from "@/server/http";
 import { loginSchema } from "@/lib/schemas";
 import { login, SESSION_COOKIE } from "@/server/auth/service";
+import { BASE_PATH } from "@/lib/base-path";
 
 export async function POST(req: import("next/server").NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(req: import("next/server").NextRequest) {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
-      path: "/",
+      path: BASE_PATH || "/",
       ...(input.remember ? { expires: new Date(expiresAt) } : {}),
     });
     return res;

@@ -7,7 +7,11 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+// e.g. NEXT_PUBLIC_BASE_PATH=/HRmanagement to serve at https://example.com/HRmanagement (build-time).
+const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "") || undefined;
+
 const nextConfig: NextConfig = {
+  basePath,
   poweredByHeader: false,
   serverExternalPackages: ["exceljs", "mongodb"],
   experimental: {

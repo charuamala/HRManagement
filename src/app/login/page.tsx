@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { withBase } from "@/lib/base-path";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
 export default function LoginPage() {
@@ -19,7 +20,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const r = await api<{ redirect: string }>("POST", "/api/auth/login", { identifier, password, remember });
-      window.location.href = r.redirect;
+      window.location.href = withBase(r.redirect);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sign-in failed");
       setBusy(false);

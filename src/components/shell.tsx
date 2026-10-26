@@ -5,6 +5,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { CalendarCheck, Database, LayoutDashboard, LogOut, Menu, Users, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { withBase } from "@/lib/base-path";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { RoleKey } from "@/lib/types";
 
@@ -30,7 +31,7 @@ export function Shell({ user, children }: { user: ShellUser; children: React.Rea
 
   async function logout() {
     await api("POST", "/api/auth/logout").catch(() => null);
-    window.location.href = "/login";
+    window.location.href = withBase("/login");
   }
 
   const nav = (

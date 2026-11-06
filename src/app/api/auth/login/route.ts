@@ -11,7 +11,7 @@ export async function POST(req: import("next/server").NextRequest) {
       ip: clientIp(req),
       userAgent: req.headers.get("user-agent"),
     });
-    const res = NextResponse.json({ ok: true, data: { role: user.role, displayName: user.displayName, redirect: "/dashboard" } });
+    const res = NextResponse.json({ ok: true, data: { role: user.role, displayName: user.displayName, redirect: "/" } });
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",

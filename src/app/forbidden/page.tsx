@@ -6,7 +6,7 @@ export default function Forbidden() {
       <p className="text-5xl font-bold text-slate-300">403</p>
       <h1 className="text-lg font-semibold">You don&apos;t have access to this page</h1>
       <p className="text-sm text-slate-500">Ask your administrator if you need this permission.</p>
-      <Link href="/dashboard" className="text-sm font-medium text-brand-700 hover:underline">
+      <Link href="/" className="text-sm font-medium text-brand-700 hover:underline">
         Back to dashboard
       </Link>
     </div>

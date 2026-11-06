@@ -1,7 +1,6 @@
-import { requirePagePermission } from "@/server/auth/page";
-import { DashboardView } from "./view";
+import { redirect } from "next/navigation";
 
-export default async function DashboardPage() {
-  await requirePagePermission("dashboard.view");
-  return <DashboardView />;
+/** Old address — the dashboard now lives at the app's home page. */
+export default function DashboardPage() {
+  redirect("/");
 }

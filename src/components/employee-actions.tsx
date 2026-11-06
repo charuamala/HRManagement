@@ -21,12 +21,14 @@ export function EmployeeActionDialog({
 }) {
   const [date, setDate] = useState(today);
   const [reason, setReason] = useState("");
+  const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   if (!action || !employee) return null;
 
   const close = () => {
     setReason("");
+    setTyped("");
     setError(null);
     onClose();
   };
@@ -38,6 +40,7 @@ export function EmployeeActionDialog({
       if (action === "delete") await api("DELETE", `/api/employees/${employee!.id}`, { reason });
       else await api("POST", `/api/employees/${employee!.id}/status`, { active: action === "reactivate", date: action === "deactivate" ? date : undefined, reason: reason || undefined });
       setReason("");
+      setTyped("");
       onDone(action!);
     } catch (e) {
       setError((e as ApiError).message);
@@ -57,7 +60,7 @@ export function EmployeeActionDialog({
           <Button variant="secondary" onClick={close}>
             Cancel
           </Button>
-          <Button variant={action === "reactivate" ? "primary" : "danger"} onClick={confirm} loading={busy} disabled={action === "delete" && reason.trim().length < 3}>
+          <Button variant={action === "reactivate" ? "primary" : "danger"} onClick={confirm} loading={busy} disabled={action === "delete" && (reason.trim().length < 3 || typed.trim().toUpperCase() !== employee.employeeCode.toUpperCase())}>
             {action === "deactivate" ? "Deactivate" : action === "reactivate" ? "Reactivate" : "Delete permanently"}
           </Button>
         </>
@@ -76,7 +79,14 @@ export function EmployeeActionDialog({
       )}
       {action === "reactivate" && <p className="text-slate-600">The employee becomes active again and their login (if any) is re-enabled.</p>}
       {action === "delete" && (
-        <Alert tone="warn">Only use this for records created by mistake. Employees with any attendance history cannot be deleted — deactivate them instead.</Alert>
+        <>
+          <Alert tone="warn">
+            This permanently removes the employee, their login, photo and <strong>all attendance history</strong>. It cannot be undone. Employees with attendance history must be deactivated first, and only an administrator can delete them. The deletion stays in the audit log.
+          </Alert>
+          <Field label={`Type ${employee.employeeCode} to confirm *`} htmlFor="confirmCode">
+            <Input id="confirmCode" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" placeholder={employee.employeeCode} />
+          </Field>
+        </>
       )}
       <Field label={action === "delete" ? "Reason *" : "Reason (optional)"} htmlFor="reason">
         <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Recorded in the audit log" />

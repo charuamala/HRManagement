@@ -364,16 +364,26 @@ export async function deleteEmployee(ctx: AuthContext, id: ID, reason: string) {
   const employees = await col("employees");
   const emp = await employees.findById(id);
   if (!emp) throw notFound("Employee");
-  const [att, corr, leave, reports] = await Promise.all([
+  const [att, events, corr, leave, reports, supervisorEntries] = await Promise.all([
     (await col("attendance_records")).count({ employeeId: id }),
+    (await col("attendance_events")).count({ employeeId: id }),
     (await col("attendance_correction_requests")).count({ employeeId: id }),
     (await col("employee_leave_records")).count({ employeeId: id }),
     employees.count({ supervisorEmployeeId: id }),
+    (await col("supervisors")).count({ employeeId: id }),
   ]);
-  if (att || corr || leave) {
-    throw conflict(`${emp.fullName} has attendance history (${att} record(s)). Deactivate the employee instead so history stays intact.`);
+  // Records with history: only an administrator may delete, and only after deactivation.
+  // The history goes with the employee; the audit log keeps the deletion (append-only).
+  if (att || events || corr || leave) {
+    if (ctx.role !== "admin") {
+      throw conflict(`${emp.fullName} has attendance history (${att} record(s)). Deactivate the employee instead — only an administrator can delete employees with history.`);
+    }
+    if (emp.employmentStatus !== "inactive") {
+      throw conflict(`Deactivate ${emp.fullName} first. Employees with attendance history can be deleted only after they are deactivated.`);
+    }
   }
   if (reports) throw conflict(`${reports} employee(s) report to ${emp.fullName}. Reassign them first.`);
+  if (supervisorEntries) throw conflict(`${emp.fullName} is listed in the Supervisor master. Remove that entry first.`);
   const users = await col("users");
   const user = await users.findOne({ employeeId: id });
   if (user?.id === ctx.user.id) throw forbidden("You cannot delete yourself");
@@ -381,6 +391,11 @@ export async function deleteEmployee(ctx: AuthContext, id: ID, reason: string) {
   await transaction(async () => {
     await (await col("employee_shift_assignments")).deleteMany({ employeeId: id });
     await (await col("supervisor_assignments")).deleteMany({ employeeId: id });
+    await (await col("attendance_records")).deleteMany({ employeeId: id });
+    await (await col("attendance_events")).deleteMany({ employeeId: id });
+    await (await col("attendance_correction_requests")).deleteMany({ employeeId: id });
+    await (await col("employee_leave_records")).deleteMany({ employeeId: id });
+    await (await col("employee_photos")).deleteMany({ employeeId: id });
     if (user) {
       await revokeSessions(user.id);
       await (await col("auth_tokens")).deleteMany({ userId: user.id });
@@ -389,7 +404,14 @@ export async function deleteEmployee(ctx: AuthContext, id: ID, reason: string) {
       await users.deleteById(user.id);
     }
     await employees.deleteById(id);
-    await audit(actorOf(ctx), { action: "delete", module: "employees", recordId: id, oldValues: emp as unknown as Record<string, unknown>, reason });
+    await audit(actorOf(ctx), {
+      action: "delete",
+      module: "employees",
+      recordId: id,
+      oldValues: emp as unknown as Record<string, unknown>,
+      newValues: { deletedHistory: { attendanceRecords: att, attendanceEvents: events, corrections: corr, leaveRecords: leave } },
+      reason,
+    });
   });
   return { deleted: true };
 }

@@ -18,7 +18,7 @@ export interface ShellUser {
 }
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "dashboard.view" },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, perm: "dashboard.view" },
   { href: "/employees", label: "Employees", icon: Users, perm: "employees.view" },
   { href: "/attendance", label: "Daily Attendance", icon: CalendarCheck, perm: "attendance.view" },
   { href: "/masters", label: "Master Management", icon: Database, perm: "masters.view" },
